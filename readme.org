@@ -1,0 +1,72 @@
+
+
+* Enonix: Nix packaging for Enonic XP and CLI
+
+This repo contains my efforts to package the Enonic XP platform and
+the Enonic CLI for Nix and NixOS.
+
+** Goals
+
+- Make the Enonic XP platform and the CLI available via the Nix
+  package manager
+
+** Issues to resolve
+
+- Namespacing :: if this goes in, should it be two separate packages
+  (~enonic-xp~ and ~enonic-cli~) or should the attributes be part of
+  the same package (~enonic.xp~ and ~enonic.cli~)? Maybe just have a
+  package called ~enonic~ that provides both?
+
+** History and resources
+
+The contents of this repo are a result of a generous amount of help
+from both the Nix and Enonic communities. It builds upon guidance from
+[[https://discuss.enonic.com/t/error-when-running-enonic-sandbox-start-no-such-file-or-directory/2414][this discuss.enonic thread about the sandbox erroring out]] and uses
+tips in
+[[https://discourse.nixos.org/t/help-creating-a-derivation-package-java-app-how-do-i-get-started/11581][this discourse.nixos thread to get started with packaging]] and then
+[[https://discourse.nixos.org/t/how-do-i-package-an-app-with-a-directory-structure-java-app/12019/5][this tread on how to package Java apps with directory structures]] to
+keep building on it.
+
+* Tasks left to do [0/6]
+
+** TODO Symlink XP distro from ~~/.enonic~ (or otherwise make the distro available)
+:LOGBOOK:
+- State "TODO"       from              [2021-05-19 Wed 16:00]
+:END:
+
+** WAITING Update CLI package
+:LOGBOOK:
+- State "WAITING"    from "TODO"       [2021-05-19 Wed 16:01] \\
+  Waiting for next version (which includes symlink compatibility) to be released.
+- State "TODO"       from              [2021-05-19 Wed 16:00]
+:END:
+
+** TODO Create functioning overlay
+:LOGBOOK:
+- State "TODO"       from "WAITING"    [2021-05-19 Wed 16:02]
+:END:
+
+Rather than getting the packages into nixpkgs, it might be easier to
+provide an overlay that people can use. Find out what the best way to
+do this is. Currently, the overlay works using the build files of the
+separate packages.
+
+** TODO Find out what best practices are
+:LOGBOOK:
+- State "TODO"       from "TODO"       [2021-05-19 Wed 16:07]
+:END:
+
+When it comes to packaging and distribution of these systems.
+
+** TODO Find out what the recommended way of keeping this up to date is
+:LOGBOOK:
+- State "TODO"       from "TODO"       [2021-05-19 Wed 16:08]
+:END:
+
+** TODO Find out whether this should go into ~nixpkgs~
+:LOGBOOK:
+- State "TODO"       from "TODO"       [2021-05-19 Wed 16:08]
+:END:
+
+It would be nice to just have this available in ~nixpkgs~, both for me
+and for any other Enonic/NixOS users out there.
