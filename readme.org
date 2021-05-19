@@ -70,3 +70,167 @@ When it comes to packaging and distribution of these systems.
 
 It would be nice to just have this available in ~nixpkgs~, both for me
 and for any other Enonic/NixOS users out there.
+
+* Patching process
+
+When trying to find out how to make the binaries work, here is how I
+proceeded:
+
+
+
+** Manual patching
+
+  Following [[https://unix.stackexchange.com/questions/522822/different-methods-to-run-a-non-nixos-executable-on-nixos/522823#522823][this detailed StackExchange]] reply on patching binaries for
+  NixOS, I managed to manually patch the Java executable that comes
+  with the Enonic distribution.
+
+  Here are the steps I took (Enonic XP 7.6.1):
+
+  1. Find out which interpreter it's using:
+     #+begin_src sh
+       $ patchelf --print-interpreter ./java
+       /lib64/ld-linux-x86-64.so.2
+     #+end_src
+
+  2. Find out where I can get this interpreter.
+
+     According to the stack exchange response, it's available with
+     ~glibc~. However, it's also provided by ~$NIX_CC~ (presumably for
+     convenience). In an expression, you should probably use ~glibc~,
+     but when dirty patching like this, ~$NIX_CC~ will have to do.
+
+     #+BEGIN_SRC shell
+       $ cat $NIX_CC/nix-support/dynamic-linker
+       /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib/ld-linux-x86-64.so.2
+     #+END_SRC
+
+  3. Set the interpreter
+
+     #+BEGIN_SRC shell
+       patchelf --set-interpreter (cat $NIX_CC/nix-support/dynamic-linker) ./java
+     #+END_SRC
+
+  4. Find out that it's not able to load all required libraries.
+
+     When trying to run it with this interpreter, I'm told that:
+
+     #+BEGIN_SRC shell
+       $ ./java
+       ./java: error while loading shared libraries: libz.so.1: cannot open shared object file: No such file or directory
+     #+END_SRC
+
+  5. Use ~ldd~ to find out what libraries it can't find
+
+     #+BEGIN_SRC shell
+       $ ldd ./java
+               linux-vdso.so.1 (0x00007ffc2ede1000)
+               libz.so.1 => not found
+               libpthread.so.0 => /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib/libpthread.so.0 (0x00007f261425b000)
+               libjli.so => /home/thomas/.enonic/distributions/enonic-xp-linux-sdk-7.6.1/jdk/bin/./../lib/jli/libjli.so (0x00007f261404a000)
+               libdl.so.2 => /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib/libdl.so.2 (0x00007f2614045000)
+               libc.so.6 => /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib/libc.so.6 (0x00007f2613e86000)
+               /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib/ld-linux-x86-64.so.2 => /nix/store/0c7c96gikmzv87i7lv3vq5s1cmfjd6zf-glibc-2.31-74/lib64/ld-linux-x86-64.so.2 (0x00007f2614482000)
+               libz.so.1 => not found
+     #+END_SRC
+
+     As it turns out, it can't find ~libz.so.1~
+
+  6. Find out if I have this lib available in the store, and if so: where.
+
+     #+BEGIN_SRC shell
+       $ find /nix/store -name libz.so.1
+       /nix/store/9a2bmcc6z81h6hfigbd3wbj4y2wazvzh-dropbox-fhs/usr/lib64/libz.so.1
+       /nix/store/wpxbdkpss3kd0vgb0kia9m6i03hmxk1c-dropbox-usr-target/lib/libz.so.1
+       /nix/store/rldppqna2kya26zpdrl7p1wlbz0jgvj3-zlib-1.2.11/lib/libz.so.1
+       /nix/store/3yglmszn58qwj3dw94b0z9iy18vxaa1w-zlib-1.2.11/lib/libz.so.1
+       /nix/store/s06clkz6r628iqzab3plng138dln85h0-zlib-1.2.11/lib/libz.so.1
+       /nix/store/7bgshg2z70fpcc7adxfag1lgf45yamxh-zlib-1.2.11/lib/libz.so.1
+       /nix/store/5y80k8pclg87315p8pcvbs84f3mhh197-dropbox-fhs/usr/lib64/libz.so.1
+       /nix/store/zkswvy1ya0nf5k6108av1zbyp2ns577v-zlib-1.2.11/lib/libz.so.1
+       /nix/store/1srmyg1a8cxqwd0hd24rj6kw4lqd61yq-zlib-1.2.11/lib/libz.so.1
+       /nix/store/88x5rj72dzj8p6i0nc3spcnacbs3xn9w-dropbox-usr-target/lib/libz.so.1
+       /nix/store/cjpcpsxhpd4bwnrq245p106dkdp3qsgv-dropbox-fhs/usr/lib64/libz.so.1
+       /nix/store/jkkav18vz5xss88syykhx80mdain5s3a-dropbox-usr-target/lib/libz.so.1
+       /nix/store/wfgh2y28lsr220qnzzrrkjq263fhw2z8-dropbox-fhs/usr/lib64/libz.so.1
+       /nix/store/9qada8411z6ghk45h2y6x2sr0hg463qi-dropbox-fhs/usr/lib64/libz.so.1
+       /nix/store/1nryihffvbww7jby38rhsrc92n3y5qw9-dropbox-usr-target/lib/libz.so.1
+       /nix/store/6pr3z8qx1dfip9rkn52qs7xk2jwc5bmp-dropbox-usr-target/lib/libz.so.1
+     #+END_SRC
+
+     As it turns out, I've got a bunch of copies of it. For a
+     derivation, we'd probably specify ~zlib~ as a runtime dependency.
+     For the dirty patch, though, we can use one of the above libs.
+
+  7. Add the path to the found ~libz.so.1~ library to the executable's ~rpath~
+
+     #+BEGIN_SRC shell
+       $ patchelf --set-rpath /nix/store/s06clkz6r628iqzab3plng138dln85h0-zlib-1.2.11/lib/:(patchelf --print-rpath ./java) ./java
+     #+END_SRC
+
+     At this point, the executable should work as expected.
+
+
+
+** Automatic patching + packaging
+
+  Of course, it would be swell if we could package it properly or at
+  least provide an overlay that would take care of it, but that may
+  require more thinking.
+
+  Based on the above, I'd probably need ~glibc~ and ~zlip~ as
+  ~buildInputs~. For ~nativeBuildInputs~: ~autoPatchElfHook~ and
+  ~tar~.
+  The distribution is available here
+  https://repo.enonic.com/public/com/enonic/xp/enonic-xp-linux-sdk/7.6.1/
+  in both tar and zip formats. Either use ~unzip~ or ~tar -xvf~.
+
+  This extracts the XP distribution. The path to the Java file to
+  patch here would be: ~<distribution>/jdk/bin/java~. If
+  ~autoPatchElfHook~ is able to patch the Java executable on its own, that's great.
+  Otherwise: we might have to do it manually (using ~patchElf~),
+  though I don't know how that would work.
+
+  Now, the packaged app would end up in the Nix store, so we'd
+  probably also want to create a symbolic link to the store directory
+  from the expected
+  ~~/.enonic/distributions/enonic-xp-linux-sdk-x.y.z~ directory.
+
+  For now, assuming Linux should be alright. Support macOS (Nix
+  darwin) could be a stretch goal.
+
+  Based on the Stack Exchange answer, I think the derivation would
+  look something like this (but this is *very much not finished*):
+
+  #+BEGIN_SRC nix
+    { stdenv, unzip, glibc, zlib, autoPatchelfHook }:
+
+    let
+      version = "7.6.1";
+
+      url =
+        "https://repo.enonic.com/public/com/enonic/xp/enonic-xp-linux-sdk/${version}/enonic-xp-linux-sdk-7.6.1.tgz";
+
+    in stdenv.mkDerivation {
+      name = "enonic-xp-${version}";
+      inherit version;
+
+      src = fetchTarball {
+        sha256 = "0vmmqd9d4w0zis839wg62251vvvcd3jmvb3rg1p0bgcl3b2qy5dk";
+        inherit url;
+      };
+
+      nativeBuildInputs = [ autoPatchelfHook ];
+
+      buildInputs = [ glibc zlib ];
+
+      # add unpackPhase and installPhaase here
+
+      meta = with stdenv.lib; {
+        description = "Enonic XP distribution";
+        homepage = "https://enonic.com";
+        license = licenses.gplv3;
+        maintainers = with stdenv.lib.maintainers; [ ];
+        platforms = [ "x86_64-linux" ];
+      };
+    }
+  #+END_SRC
