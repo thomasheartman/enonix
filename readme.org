@@ -74,9 +74,11 @@ and for any other Enonic/NixOS users out there.
 * Patching process
 
 When trying to find out how to make the binaries work, here is how I
-proceeded:
+proceeded.
 
-
+*Note*: the final automatic patch process is used in the actual
+package expression. The one listed below /does not work/ and was
+written mostly as a conjecture.
 
 ** Manual patching
 
