@@ -2,4 +2,12 @@ self: super:
 
 with super.lib;
 
-import ./overlay.nix
+let
+  overlays = [ ./overlay.nix ];
+
+in
+(
+  foldl' (flip extends) (_: super)
+    (map import overlays)
+)
+  self
