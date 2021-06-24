@@ -16,7 +16,7 @@
 }:
 
 let
-  version = "7.6.1";
+  version = "7.7.0";
 
   distro = "enonic-xp-linux-sdk-${version}";
 
@@ -30,7 +30,7 @@ stdenv.mkDerivation {
   inherit version;
 
   src = fetchurl {
-    sha256 = "0c58zcyddxa0041bvyafyz8250ylcnqgh4ckqgyq078dzzkg5mbd";
+    sha256 = "0vdppnch1zfmkmv9y7ywr7l7zp940rnh60zaqv8f4f8jnrnyq5b3";
     inherit url;
   };
 
