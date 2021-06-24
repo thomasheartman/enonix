@@ -1,13 +1,14 @@
-self: super:
-
-with super.lib;
-
+# copied from the mozilla-overlay's version: https://github.com/mozilla/nixpkgs-mozilla/blob/master/default.nix
 let
   overlays = [ ./overlay.nix ];
 
 in
-(
-  foldl' (flip extends) (_: super)
-    (map import overlays)
-)
-  self
+
+self: super:
+
+  with super.lib;
+  (
+    foldl' (flip extends) (_: super)
+      (map import overlays)
+  )
+    self
