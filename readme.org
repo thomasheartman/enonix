@@ -34,6 +34,68 @@ keep building on it.
 - State "TODO"       from              [2021-05-19 Wed 16:00]
 :END:
 
+After some research and looking through the code base, it seems that
+the path do distributions is hard coded to be
+~{util.GetHomeDir}/.enonic~, where the ~util.GetHomeDir~ function
+performs a number of checks based on OS and environment. For instance,
+it checks whether the CLI is a snap based distro, etc. Tries to use
+the ~HOME~ env var.
+
+In theory, if you override the ~HOME~ var before running the command
+(I /think/ the packaging process take care of that), then you should
+be able to make the CLI look wherever you want.
+
+*However*, the CLI still looks for
+~$HOME/.enonic/distributions/<distro name>~, so this whole path would
+have to be constructed. The next question, then, is how this would
+work with multiple distros:
+
+In theory (and probably in future practice), it would be nice to be
+able to launch multiple distros (7.6, 7.7, etc.) from the same CLI. To
+achieve this, the distros would have to be located in the same
+directory.
+
+Question: can you create a ~/etc/enonic~, ~/usr/.enonic~ directory or
+similar and have Nix control that?
+
+Here are the suggestions I see (though my knowledge of how Nix works
+is far from perfect):
+
+- Somehow create symlinks in the user's home directory. This seems
+  difficult and somewhat antithetical to how Nix should work (and the
+  build process doesn't know anything about the user). However,
+  it is in line with how Home Manager works, so maybe they could work
+  in concert somehow.
+- Writing files to ~$out/.enonic/distributions/<distro name>~ and
+  overriding ~HOME~ in the CLI env to point to ~$out~. This seems to
+  cause a very tight coupling between the CLI and the distro and is
+  probably not desirable. Also, this would probably mean that the CLI
+  would try and write files to ~$out~ (and set it as ~XP_HOME~), which
+  wouldn't work.
+- Creating a ~/usr/.enonic~ directory (or somewhere else that Nix can
+  control) and either setting ~HOME~ to that directory in the CLI
+- CLI feature request: allow end users to override distro paths (e.g. via
+  ~XP_DISTRO_DIR~ (or similarly named) env var and ~--xp-distro-dir~
+  flag).
+- CLI feature request: add global distro dir (e.g.
+  ~/etc/enonic/distributions~) that is either used as a fallback for
+  if there is no ~~/.enonic/distributions~ directory OR that is simply
+  added to list of possible distros.
+
+#+begin_disclaimer
+I don't know  much about the best practices of Linux folder structure,
+so I don't know whether ~/etc~ or ~/usr~ are appropriate places to put
+these distros at all.
+#+end_disclaimer
+
+If creating symlinks from the standard Nix build process isn't
+possible, I think the last option (global distro dir) is my favorite.
+However, it would require the CLI team to both accept the feature
+request and to either build the feature OR to accept a PR that fixes
+this. I'd be happy to try and work on this, but I have no experience
+writing Go just yet.
+
+
 ** WAITING Update CLI package
 :LOGBOOK:
 - State "WAITING"    from "TODO"       [2021-05-19 Wed 16:01] \\
